@@ -1,0 +1,387 @@
+{% extends 'original.html' %}
+{% load static %}
+{% block content %}
+
+<header class="masthead">
+    <div class="container">
+        <div class="intro-text">
+            <div class="intro-heading text-uppercase">Enjoy Dice Roll</div>
+            <button class="btn btn-primary btn-xl text-uppercase" id="request-address">Load Your Wallet</button>
+            <p></p>
+            <h3 class="section-subheading text-muted" id="user-wallet-address">Please load your wallet</h3>
+        </div>
+    </div>
+</header>
+
+<section class="bg-light" id="portfolio_sub">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <h2 class="section-heading text-uppercase">GameRoom info</h2>
+                <h3 class="section-subheading text-muted">Click to play</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 col-sm-6 portfolio-item">
+                <a class="portfolio-link" data-toggle="modal" href='#detail-in-game'>
+                    <div class="portfolio-hover">
+                        <div class="portfolio-hover-content">
+                            <i class="fas fa-plus fa-3x"></i>
+                        </div>
+                    </div>
+                    <img class="img-fluid" src='{% static "img/portfolio/01-thumbnail.jpg" %}' alt="">
+                </a>
+            </div>
+            <a class="portfolio-link" data-toggle="modal">
+                <h1 id="game-room-id">
+                    Game Room Id : Please load your wallet</h1>
+                <h3 id="game-room-status">Game room status :</h3>
+                <h3 id="game-room-data-address-host">host : </h3>
+                <h3 id="game-room-data-address-player">player : </h3>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <h1>Game Results</h1>
+        <textarea id="whole-game-result" placeholder="game results" rows="20" cols="90" ></textarea>
+    </div>
+</section>
+
+
+
+<!-- 세부페이지 내용 -->
+<div aria-hidden="true" class="portfolio-modal modal fade" id="detail-in-game" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="close-modal" data-dismiss="modal">
+                <div class="lr">
+                    <div class="rl"></div>
+                </div>
+            </div>
+
+            <div class="modal-content">
+                <div class="container">
+                    <div class="col-lg-12 text-center">
+                        <h2 class="section-heading text-lowercase">Your game room</h2>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6" id="in-game-div" style="flex-start">
+
+                            <p>
+                            <button class="btn btn-primary" id="start-btn" onclick=clickStartButton() type="button" >
+                                GAME START  !
+                            </button>
+
+                            <h1>Escape Room </br> Toggle Ready</h1>
+
+                            <button class="btn btn-primary" id="escape-game-room" onclick=clickEscapeButton() type="button" >
+                                ESCAPE  !
+                            </button>
+                            <button class="btn btn-primary" id="ready-btn" onclick=clickReadyButton() type="button" >
+                                READY  !
+                            </button>
+
+                            </p>
+                            <br><br>
+                            <p>
+                            <h1>Play</h1>
+                            <button class="btn btn-primary" id="hit" onclick=clickFixnHitButton("hit") type="button" >
+                                HIT  !
+                            </button>
+                            </p>
+
+                        </div>
+                        <div class="col-md-6">
+                            <textarea cols="50" id="game-result" placeholder="Your hands" rows="20"></textarea>
+                            <p class="help-block text-danger"></p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <textarea cols="50" id="score-data" placeholder="Request Json" rows="20"></textarea>
+                            <p class="help-block text-danger"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <textarea cols="50" id="scorere-sponse" placeholder="Response Json" rows="20"></textarea>
+                            <p class="help-block text-danger"></p>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS code -->
+
+<script src = "http://cdn.jsdelivr.net/gh/icon-project/icon-sdk-js@latest/build/icon-sdk-js.web.min.js" > </script>
+<script>
+var IconService = window['icon-sdk-js']
+var provider = new IconService.HttpProvider('https://bicon.net.solidwallet.io/api/v3')
+var iconService = new IconService(provider)
+var IconConverter = IconService.IconConverter
+var IconBuilder = IconService.IconBuilder
+var ScoreAddress = "cx89245b4a663f2062a9fe52a219c44c281e1d6c36"
+var GameRoomID = NaN;
+var requestAddress = document.getElementById("request-address")
+var gameRoomId = document.getElementById("game-room-id")
+var domGameRoomStatus = document.getElementById("game-room-status")
+var gameRoomDataAddressHost = document.getElementById("game-room-data-address-host")
+var gameRoomDataAddressPlayer = document.getElementById("game-room-data-address-player")
+var wholeGameResult = document.getElementById("whole-game-result")
+var gameResult = document.getElementById("game-result")
+var userAddress = document.getElementById("user-wallet-address")
+var scoreRequest = document.getElementById("score-data")
+var scoreResponse = document.getElementById("scorere-sponse")
+var startBtn = document.getElementById("start-btn")
+window.addEventListener("ICONEX_RELAY_RESPONSE", eventHandler, false);
+document.getElementById("in-game-div").style.alignItems = "flex-start";
+startBtn.style.cssText = "text-align:center; display:none; margin: 0 auto"
+function eventHandler(event) {
+    var type = event.detail.type
+    var payload = event.detail.payload
+    switch (type) {
+        case "RESPONSE_ADDRESS":
+            fromAddress = payload
+            userAddress.innerHTML = "Your address :" + '<p></p>' + fromAddress
+            setTimeout(function() {userStatus(fromAddress).then(
+                function(result) {
+                    if ( result === undefined){
+                        gameRoomId.innerHTML = "You had to join a Game room.";
+                    }else {
+                        GameRoomID = result;
+                        gameRoomId.innerHTML = "Game Room Id : " + GameRoomID;
+                        var hit = document.getElementById("hit")
+                        if(fromAddress == GameRoomID){
+                            startBtn.style.cssText = "text-align:center; display:block; margin: 0 auto"
+                        }
+                        gameRoomStatus(GameRoomID).then(function (result) {
+                            if (result.status == "active"){
+                                domGameRoomStatus.innerHTML = "Game Room status : Game Started";
+                            } else {
+                                domGameRoomStatus.innerHTML = "Game Room status : " + result.status;
+                                gameRoomDataAddressHost.innerHTML = "Host Address : Ready Status"+"</p>" + result.user_ready_status[0] + "</p>";
+                                gameRoomDataAddressPlayer.innerHTML = "Player Address : Ready Status"+"</p>" + result.user_ready_status[1];
+                            }
+                        })
+                    }
+                })
+            }, 4000)
+            break
+        case "RESPONSE_JSON-RPC":
+            txHash = payload
+            scoreResponse.innerHTML = JSON.stringify(payload)
+            setTimeout(function() {
+                iconService.getTransactionResult(payload.result).execute().then(
+                    function(result) {
+                        scoreResponse.innerHTML = JSON.stringify(result);
+                        showMine().then(function(result){
+                                gameResult.innerHTML = result
+                            }
+                        )
+                    },
+                    function(error) {
+                    });
+            }, 4000)
+        default:
+    }
+}
+requestAddress.onclick = function() {
+    window.dispatchEvent(new CustomEvent('ICONEX_RELAY_REQUEST', {
+        detail: {
+            type: 'REQUEST_ADDRESS'
+        }
+    }))
+}
+setInterval(function() {
+    gameResults().then(
+        function(result) {
+            wholeGameResult.innerHTML = result;
+        });
+}, 5000);
+function showMine(){
+    var iconCallBuilder = new IconBuilder.CallBuilder;
+    var callTransaction = iconCallBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .method('showMine')
+        .params({
+            "_from" : fromAddress
+        })
+        .build()
+    data = iconService.call(callTransaction).execute();
+    return data
+}
+function clickStartButton(){
+    var callTransactionBuilder = new IconBuilder.CallTransactionBuilder;
+    var callTransferData = callTransactionBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .nid(IconConverter.toBigNumber(3))
+        .timestamp((new Date()).getTime() * 1000)
+        .version(IconConverter.toBigNumber(3))
+        .stepLimit(IconConverter.toBigNumber(10000000))
+        .method("gameStart")
+        .params("")
+        .build();
+    scoreData = JSON.stringify({
+        "jsonrpc": "2.0",
+        "method": "icx_sendTransaction",
+        "params": IconConverter.toRawTransaction(callTransferData),
+        "id": 8015
+    });
+    scoreRequest.innerHTML = scoreData
+    var parsed = JSON.parse(scoreData)
+    if (parsed.method === "icx_sendTransaction" && !fromAddress) {
+        alert('Select the ICX Address')
+        return
+    }
+    window.dispatchEvent(new CustomEvent('ICONEX_RELAY_REQUEST', {
+        detail: {
+            type: 'REQUEST_JSON-RPC',
+            payload: parsed
+        }
+    }))
+}
+function clickReadyButton(){
+    var callTransactionBuilder = new IconBuilder.CallTransactionBuilder;
+    var callTransferData = callTransactionBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .nid(IconConverter.toBigNumber(3))
+        .timestamp((new Date()).getTime() * 1000)
+        .version(IconConverter.toBigNumber(3))
+        .stepLimit(IconConverter.toBigNumber(10000000))
+        .method("toggleReady")
+        .params("")
+        .build();
+    scoreData = JSON.stringify({
+        "jsonrpc": "2.0",
+        "method": "icx_sendTransaction",
+        "params": IconConverter.toRawTransaction(callTransferData),
+        "id": 8015
+    });
+    scoreRequest.innerHTML = scoreData
+    var parsed = JSON.parse(scoreData)
+    if (parsed.method === "icx_sendTransaction" && !fromAddress) {
+        alert('Select the ICX Address')
+        return
+    }
+    window.dispatchEvent(new CustomEvent('ICONEX_RELAY_REQUEST', {
+        detail: {
+            type: 'REQUEST_JSON-RPC',
+            payload: parsed
+        }
+    }))
+}
+// 게임 버튼 출현
+function clickEscapeButton(){
+    var callTransactionBuilder = new IconBuilder.CallTransactionBuilder;
+    var callTransferData = callTransactionBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .nid(IconConverter.toBigNumber(3))
+        .timestamp((new Date()).getTime() * 1000)
+        .version(IconConverter.toBigNumber(3))
+        .stepLimit(IconConverter.toBigNumber(10000000))
+        .method("escape")
+        .params("")
+        .build();
+    scoreData = JSON.stringify({
+        "jsonrpc": "2.0",
+        "method": "icx_sendTransaction",
+        "params": IconConverter.toRawTransaction(callTransferData),
+        "id": 8015
+    });
+    scoreRequest.innerHTML = scoreData
+    var parsed = JSON.parse(scoreData)
+    if (parsed.method === "icx_sendTransaction" && !fromAddress) {
+        alert('Select the ICX Address')
+        return
+    }
+    window.dispatchEvent(new CustomEvent('ICONEX_RELAY_REQUEST', {
+        detail: {
+            type: 'REQUEST_JSON-RPC',
+            payload: parsed
+        }
+    }))
+}
+// 게임 버튼 출현
+function clickFixnHitButton(type){
+    var callTransactionBuilder = new IconBuilder.CallTransactionBuilder;
+    var callTransferData = callTransactionBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .nid(IconConverter.toBigNumber(3))
+        .timestamp((new Date()).getTime() * 1000)
+        .version(IconConverter.toBigNumber(3))
+        .stepLimit(IconConverter.toBigNumber(10000000))
+        .method(type)
+        .params("")
+        .build();
+    scoreData = JSON.stringify({
+        "jsonrpc": "2.0",
+        "method": "icx_sendTransaction",
+        "params": IconConverter.toRawTransaction(callTransferData),
+        "id": 8015
+    });
+    scoreRequest.innerHTML = scoreData
+    var parsed = JSON.parse(scoreData)
+    if (parsed.method === "icx_sendTransaction" && !fromAddress) {
+        alert('Select the ICX Address')
+        return
+    }
+    window.dispatchEvent(new CustomEvent('ICONEX_RELAY_REQUEST', {
+        detail: {
+            type: 'REQUEST_JSON-RPC',
+            payload: parsed
+        }
+    }))
+}
+// game room status
+function gameRoomStatus(_gameroomId) {
+    var iconCallBuilder = new IconBuilder.CallBuilder;
+    var callTransaction = iconCallBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .method('getGameRoomStatus')
+        .params({
+            "_gameroomId" : _gameroomId
+        })
+        .build()
+    data = iconService.call(callTransaction).execute();
+    return data
+}
+// call game_results to view
+function gameResults() {
+    var iconCallBuilder = new IconBuilder.CallBuilder;
+    var callTransaction = iconCallBuilder
+        .to(ScoreAddress)
+        .method('getResults')
+        .params()
+        .build()
+    data = iconService.call(callTransaction).execute();
+    return data
+}
+// check user's status
+function userStatus(Address) {
+    var iconCallBuilder = new IconBuilder.CallBuilder;
+    var callTransaction = iconCallBuilder
+        .from(fromAddress)
+        .to(ScoreAddress)
+        .method('getUserStatus')
+        .params({
+            "_userId" : Address
+        })
+        .build()
+    data = iconService.call(callTransaction).execute();
+    return data
+}
+</script>
+
+{% endblock %}

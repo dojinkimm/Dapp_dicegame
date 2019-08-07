@@ -1,0 +1,12 @@
+Django==2.1.7
+earlgrey==0.0.4
+eth-hash==0.2.0
+eth-keyfile==0.5.1
+eth-keys==0.2.1
+eth-typing==2.1.0
+eth-utils==1.4.1
+iconcommons==1.0.5.1
+iconrpcserver==1.1.2.1
+iconsdk==1.0.7
+iconservice==1.1.2
+secp256k1==0.13.2
